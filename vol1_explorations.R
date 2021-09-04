@@ -113,8 +113,9 @@ correlation <- cor.test(win.record$wins.per.year, win.record$coaches.per.year, m
   geom_point(aes(color = team)) +
   ggimage::geom_image(aes(x = wins.per.year, y = coaches.per.year, image = label), size=.1, by='height')+
   geom_smooth(method = 'lm', se=FALSE) +
+  xlim(0.2,10) +
   labs(subtitle = 'Average number of coaches per season per team \nby average wins per season per team\n', 
-       y = 'average number of coaches per year',
+       y = 'average number of coaches per year\n',
        x = 'average wins per year',
        color = 'Team') +
   theme_netball(background_hex = "#DAF7A6")+
@@ -145,7 +146,6 @@ description.1 <- paste0('To understand the stability of coaches at a team, above
     geom_line(aes(x = years.coached, y = win.prop), color = 'grey') +
     scale_y_continuous(labels = scales::percent) +
     scale_color_manual(values=c("#F67844", "#8DF644")) +
-    #geom_hline(yintercept = 0, size = 2, color = 'grey', alpha = 0.5) +
     labs(subtitle = 'Win percentage of coaches across their career,\n Coaches who have coached less than 3 years were excluded.\n',
          color = 'coached next year',
          y = 'Accumulated Win',
