@@ -1,10 +1,10 @@
 # load necissary libraries
-library(tidyverse)
-library(patchwork)
-library(rpart)
-library(rpart.plot)
-library(ggdendro)
-library(ggimage)
+library(tidyverse) # data wrangling
+library(patchwork) # plotting layout
+library(rpart) # decision tree model
+library(rpart.plot) # decision tree plot
+library(ggdendro) # ploting decision tree in ggplot object
+library(ggimage) # using images in plots
 
 # read in data from .csv file
 vol1_data <- readr::read_csv("netball-numbers-challenge/datasets/vol1/resultsFromTheTimeMachine.csv")
@@ -105,27 +105,30 @@ image.ref <- tibble(label = filenames,
 
 # run statistical test to determine the non-parametric correlation between wins per season and coaching churn per season
 correlation <- cor.test(win.record$wins.per.year, win.record$coaches.per.year, method = 'spearman')
-# plot the outcome with a linear regression line.
+# plot the outcome with a linear regression line using rank data because there isn't enough data to satisfy parametric pearson's correlation.
 # Add logos of the teams as the points.
 (plot.stability <- win.record %>% 
+    mutate(rank.wins.year = rank(wins.per.year), 
+           rank.coaches.year = rank(coaches.per.year)) %>%
     left_join(image.ref, by = c('team')) %>% # join with images to plot
-  ggplot(aes(x = wins.per.year, y = coaches.per.year)) +
-  geom_point(aes(color = team)) +
-  ggimage::geom_image(aes(x = wins.per.year, y = coaches.per.year, image = label), size=.1, by='height')+
-  geom_smooth(method = 'lm', se=FALSE) +
-  xlim(0.2,10) +
-  labs(subtitle = 'Average number of coaches per season per team \nby average wins per season per team\n', 
-       y = 'average number of coaches per year\n',
-       x = 'average wins per year',
+    ggplot(aes(x = rank.wins.year, y = rank.coaches.year)) +
+    geom_point(aes(color = team)) +
+    ggimage::geom_image(aes(image = label), size=.1, by='height')+
+    geom_smooth(method = 'lm', se=FALSE, formula = y~x) +
+    labs(subtitle = 'Rank average number of coaches per season per team \nby rank average wins per season per team\n', 
+       y = 'rank of average number of coaches per year\n',
+       x = 'rank of average wins per year',
        color = 'Team') +
-  theme_netball(background_hex = "#DAF7A6")+
-  theme(legend.position = 'none')
+    theme_netball(background_hex = "#DAF7A6")+
+    theme(legend.position = 'none')
 )
 
 # description as a single string
-description.1 <- paste0('To understand the stability of coaches at a team, above, is a plot of average \n',
-                        'wins per year over the average number of coaches per year. The correlation test, \n', 
-                        'indicates that the relationship is moderate r = ', round(correlation$estimate,2), ', p = ', round(correlation$p.value,3))
+description.1 <- paste0('To understand the stability of coaches at a team, above, is a plot of rank\n ',
+                        'of the teams average wins per year over the rank of the average number of  \n', 
+                        'coaches per year. Higher number represents higher rank. We plot the rank to \n', 
+                        'comply with the statistical test assumptions. The correlation test, indicates \n',
+                        'that the relationship is moderate with Spearman rho = ', round(correlation$estimate,2), ', p = ', round(correlation$p.value,3))
 
 (plot1.describe <- ggplot() +
     geom_label(aes(x = 1, y =1, label = description.1, family = "serif"),label.padding = unit(1, "lines"), color = '#575958', fill= '#DAF7A6',size = 4) +
@@ -188,8 +191,7 @@ rpart.plot(fit, extra = 104, box.palette = c('#F67844', '#8DF644'),
            main = 'Decision Tree predicting coaches not coaching next season')
 
 # Turns out that rpart.plots are very difficult to turn into a grob object to put into a broader ggplot layout
-# So we had to use a package ggdendro to grab some of the split infomation to great a graphic in ggplot
-# trying to create a ggplot object from the decision tree r.part model
+# So we had to use a package ggdendro to grab some of the split information to reproduce the same plot in ggplot
 
 fitr <- dendro_data(fit) # gather the split information from the model
 # gather the probability values from the model to add as text to the plot
